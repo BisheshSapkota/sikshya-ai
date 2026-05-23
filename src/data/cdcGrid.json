@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "authority": "Curriculum Development Centre (CDC), Nepal",
+    "academicYear": "2081",
+    "schemaVersion": "1.0.0",
+    "description": "Strict mock specification grid aligned with SEE Class 10 CDC mark-type rules."
+  },
+  "markTypes": {
+    "oneMark": {
+      "label": "1 Mark",
+      "aliases": ["MCQ", "Very Short Answer", "Knowledge"],
+      "marksPerQuestion": 1
+    },
+    "twoMark": {
+      "label": "2 Mark",
+      "aliases": ["Short Answer", "Understanding"],
+      "marksPerQuestion": 2
+    },
+    "threeMark": {
+      "label": "3 Mark",
+      "aliases": ["Application (sub-part)", "Higher Ability (sub-part)"],
+      "marksPerQuestion": 3
+    },
+    "fourMark": {
+      "label": "4 Mark",
+      "aliases": ["Long Answer"],
+      "marksPerQuestion": 4,
+      "note": "Science long answers use 4 marks; counted separately from 3-mark application blocks."
+    }
+  },
+  "examLevels": {
+    "BLE": {
+      "id": "BLE",
+      "label": "BLE",
+      "grade": 8,
+      "fullName": "Basic Level Examination (Class 8)",
+      "theoryMarks": 75,
+      "subjects": []
+    },
+    "SEE": {
+      "id": "SEE",
+      "label": "SEE",
+      "grade": 10,
+      "fullName": "Secondary Education Examination (Class 10)",
+      "theoryMarks": 75,
+      "subjects": [
+        {
+          "id": "science",
+          "name": "Science",
+          "nameNe": "विज्ञान",
+          "totalQuestions": 40,
+          "totalMarks": 75,
+          "examStructure": {
+            "oneMark": { "questions": 19, "marks": 19 },
+            "twoMark": { "questions": 14, "marks": 28 },
+            "fourMark": { "questions": 7, "marks": 28 }
+          },
+          "chapters": [
+            {
+              "id": "force",
+              "unit": "Physics",
+              "name": "Force",
+              "nameNe": "बल",
+              "chapterWeightPercent": 12,
+              "totalChapterMarks": 9,
+              "questionAllocation": {
+                "oneMark": {
+                  "allowed": 4,
+                  "breakdown": { "mcq": 2, "veryShortAnswer": 2 }
+                },
+                "twoMark": {
+                  "allowed": 2,
+                  "breakdown": { "shortAnswer": 2 }
+                },
+                "threeMark": {
+                  "allowed": 0,
+                  "breakdown": { "applicationSubPart": 0 }
+                },
+                "fourMark": {
+                  "allowed": 1,
+                  "breakdown": { "longAnswer": 1 }
+                }
+              },
+              "topics": [
+                "Newton's laws of motion",
+                "Friction and its types",
+                "Pressure and thrust",
+                "Gravitational force and weight"
+              ],
+              "sampleOutcomes": [
+                "Define force and state SI unit",
+                "Explain relation between mass and weight",
+                "Solve numerical on F = ma"
+              ]
+            },
+            {
+              "id": "classification-of-elements",
+              "unit": "Chemistry",
+              "name": "Classification of Elements",
+              "nameNe": "तत्वहरूको वर्गीकरण",
+              "chapterWeightPercent": 10,
+              "totalChapterMarks": 8,
+              "questionAllocation": {
+                "oneMark": {
+                  "allowed": 3,
+                  "breakdown": { "mcq": 1, "veryShortAnswer": 2 }
+                },
+                "twoMark": {
+                  "allowed": 2,
+                  "breakdown": { "shortAnswer": 2 }
+                },
+                "threeMark": {
+                  "allowed": 1,
+                  "breakdown": { "applicationSubPart": 1 }
+                },
+                "fourMark": {
+                  "allowed": 0,
+                  "breakdown": { "longAnswer": 0 }
+                }
+              },
+              "topics": [
+                "Mendeleev's periodic table",
+                "Modern periodic law",
+                "Groups and periods",
+                "Valency and atomic number trends"
+              ],
+              "sampleOutcomes": [
+                "State modern periodic law",
+                "Compare properties across periods",
+                "Predict valency from group number"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "compulsory-mathematics",
+          "name": "Compulsory Mathematics",
+          "nameNe": "अनिवार्य गणित",
+          "totalQuestions": 16,
+          "totalMarks": 75,
+          "examStructure": {
+            "note": "Math paper uses integrative questions; per-area marks sum to 75.",
+            "areas": 7
+          },
+          "chapters": [
+            {
+              "id": "trigonometry",
+              "unit": "Trigonometry",
+              "name": "Trigonometry",
+              "nameNe": "त्रिकोणमिति",
+              "areaTotalMarks": 4,
+              "workingHours": 8,
+              "totalQuestionsFromArea": 1,
+              "questionAllocation": {
+                "oneMark": {
+                  "allowed": 1,
+                  "breakdown": { "knowledge": 1 }
+                },
+                "twoMark": {
+                  "allowed": 1,
+                  "breakdown": { "understanding": 1 }
+                },
+                "threeMark": {
+                  "allowed": 1,
+                  "breakdown": { "application": 1 }
+                },
+                "fourMark": {
+                  "allowed": 0,
+                  "breakdown": { "higherAbility": 0 },
+                  "note": "Higher ability for Trigonometry is 1 mark (knowledge-level item), not 4-mark long."
+                }
+              },
+              "cognitiveMarks": {
+                "knowledge": 1,
+                "understanding": 1,
+                "application": 1,
+                "higherAbility": 1
+              },
+              "topics": [
+                "Trigonometric ratios of acute angles",
+                "Values of sin, cos, tan for 0°, 30°, 45°, 60°, 90°",
+                "Height and distance problems",
+                "Simple identities"
+              ],
+              "sampleOutcomes": [
+                "Find trigonometric ratios from a right triangle",
+                "Solve one height-and-distance numerical",
+                "Prove a basic identity"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "NEB": {
+      "id": "NEB",
+      "label": "NEB",
+      "grade": 12,
+      "fullName": "National Examination Board (Class 12)",
+      "theoryMarks": 100,
+      "subjects": []
+    }
+  }
+}
