@@ -9,7 +9,7 @@ import type { PendingAttachment } from "./fileUpload";
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const GEN_MODEL_NAME =
-  import.meta.env.VITE_GEMINI_MODEL ?? "gemini-2.0-flash";
+  import.meta.env.VITE_GEMINI_MODEL ?? "gemini-3.5-flash";
 
 export const SYSTEM_PROMPT = `
 You are Sikshya AI — one friendly tutor for Nepali students (Class 8 BLE, Class 10 SEE, Class 12 NEB/+2). Any subject.
@@ -64,7 +64,7 @@ function attachmentsToParts(files: PendingAttachment[]): Part[] {
 export async function askGemini(params: {
   userText: string;
   attachments: PendingAttachment[];
-  history: { role: "user" | "assistant"; content: string }[];
+  history?: { role: "user" | "assistant"; content: string }[];
 }): Promise<string> {
   if (!GEMINI_API_KEY) {
     throw new Error("MISSING_API_KEY");
@@ -86,7 +86,13 @@ export async function askGemini(params: {
     },
   });
 
-  const historyText = params.history
+  // Default history to [] if not provided or undefined
+  const historyArr =
+    Array.isArray(params.history) && params.history
+      ? params.history
+      : [];
+
+  const historyText = historyArr
     .slice(-MAX_HISTORY_MESSAGES)
     .map(
       (m) =>

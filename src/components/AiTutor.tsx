@@ -121,6 +121,7 @@ const AiTutor: FC<AiTutorProps> = ({ onMenuClick, onNewChat }) => {
   const [pendingFiles, setPendingFiles] = useState<PendingAttachment[]>([]);
   const [busy, setBusy] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,6 +132,7 @@ const AiTutor: FC<AiTutorProps> = ({ onMenuClick, onNewChat }) => {
   const hasContent = input.trim().length > 0 || pendingFiles.length > 0;
   const showEmpty = messages.length === 0 && !busy;
 
+  // Auto scroll
   useEffect(() => {
     listRef.current?.scrollTo({
       top: listRef.current.scrollHeight,
@@ -138,6 +140,7 @@ const AiTutor: FC<AiTutorProps> = ({ onMenuClick, onNewChat }) => {
     });
   }, [messages, busy, pendingFiles]);
 
+  // Autosize textarea height
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
@@ -170,9 +173,14 @@ const AiTutor: FC<AiTutorProps> = ({ onMenuClick, onNewChat }) => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Only allow send on explicit form submit or Enter keypress, never on input change
   const send = useCallback(async () => {
     const trimmed = clampUserInput(input.trim());
+    // Prevent double sends or empty message
     if (busy || (!trimmed && pendingFiles.length === 0)) return;
+
+    // Clean up: Only pass a single message string and relevant files—not large/history arrays!
+    // So, for the model call, only use 'trimmed' (the message) and files to upload, nothing else.
 
     const displayAttachments: DisplayAttachment[] = pendingFiles.map((f) => ({
       id: f.id,
@@ -192,44 +200,54 @@ const AiTutor: FC<AiTutorProps> = ({ onMenuClick, onNewChat }) => {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setPendingFiles([]);
-    setBusy(true);
     setFileError(null);
+    setSubmitError(null);
+    setBusy(true);
+
+    // Optional: If there are arrays/messages you want cleared before firing async API, do so here.
+    // We clear pendingFiles, and the input, so nothing large/left-over is inside the payload.
 
     try {
-      const history = messages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
+      // ONLY send a single message string (and, if needed, attachments)
       const reply = await askGemini({
         userText: trimmed,
         attachments: filesToSend,
-        history,
+        history: [], // Explicitly set history to empty array. Integrate with messages if needed for multi-turn mem.
       });
-
       setMessages((prev) => [
         ...prev,
         { id: `a-${Date.now()}`, role: "assistant", content: reply },
       ]);
-    } catch (err) {
-      const code = err instanceof Error ? err.message : "";
+    } catch (err: any) {
+      let code = typeof err === "object" && err && "message" in err ? err.message : "";
       let text =
         "Something went wrong. Try a shorter message or smaller file.";
       if (code === "MISSING_API_KEY") {
-        text =
-          "Add `VITE_GEMINI_API_KEY` to `.env` and restart the dev server.";
+        text = "Add `VITE_GEMINI_API_KEY` to `.env` and restart the dev server.";
       } else if (code === "EMPTY") {
         text = "Type a message or attach a file.";
+      } else if (
+        code?.toString().includes("429") ||
+        (err && typeof err === "object" && "status" in err && err.status === 429)
+      ) {
+        text = "Too many requests! Please wait a moment and try again.";
+      } else if (
+        code?.includes("Request payload size exceeds the limit") ||
+        code?.includes("413") // 413 Payload Too Large HTTP error
+      ) {
+        text =
+          "Your message or files are too large. Please shorten your message or upload smaller files.";
       }
       setMessages((prev) => [
         ...prev,
         { id: `a-${Date.now()}`, role: "assistant", content: text },
       ]);
+      setSubmitError(text);
     } finally {
       setBusy(false);
       inputRef.current?.focus();
     }
-  }, [input, pendingFiles, busy, messages]);
+  }, [input, pendingFiles, busy]);
 
   const acceptTypes = ACCEPTED_MIME.join(",");
 
@@ -368,6 +386,9 @@ const AiTutor: FC<AiTutorProps> = ({ onMenuClick, onNewChat }) => {
           {fileError && (
             <p className="mb-2 text-center text-xs text-red-600">{fileError}</p>
           )}
+          {submitError && (
+            <p className="mb-2 text-center text-xs text-red-600">{submitError}</p>
+          )}
 
           {pendingFiles.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-2">
@@ -406,9 +427,10 @@ const AiTutor: FC<AiTutorProps> = ({ onMenuClick, onNewChat }) => {
           )}
 
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              void send();
+              if (busy || !hasContent) return;
+              await send();
             }}
             className="flex items-end gap-2 rounded-[26px] border border-slate-200 bg-white px-2 py-2 shadow-md focus-within:border-slate-300 focus-within:shadow-lg"
           >
@@ -419,11 +441,14 @@ const AiTutor: FC<AiTutorProps> = ({ onMenuClick, onNewChat }) => {
               multiple
               className="hidden"
               onChange={(e) => void onPickFiles(e.target.files)}
+              disabled={busy}
             />
             <button
               type="button"
               disabled={busy || pendingFiles.length >= MAX_ATTACHMENTS}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                if (!busy) fileInputRef.current?.click();
+              }}
               className="mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 disabled:opacity-40"
               aria-label="Attach file"
               title="JPG, PNG, PDF, TXT (max 4 MB each)"
@@ -434,16 +459,23 @@ const AiTutor: FC<AiTutorProps> = ({ onMenuClick, onNewChat }) => {
             <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(clampUserInput(e.target.value))}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !busy && hasContent) {
+              onChange={(e) => {
+                setInput(clampUserInput(e.target.value));
+              }}
+              onKeyDown={async (e) => {
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey &&
+                  !busy &&
+                  hasContent
+                ) {
                   e.preventDefault();
-                  void send();
+                  await send();
                 }
               }}
               rows={1}
               disabled={busy}
-              placeholder="Message Sikshya AI…"
+              placeholder={busy ? "Sikshya AI is calculating..." : "Message Sikshya AI…"}
               className="max-h-40 min-h-[24px] flex-1 resize-none border-0 bg-transparent py-2 text-[15px] text-slate-900 outline-none placeholder:text-slate-400"
               aria-label="Message"
             />
@@ -451,13 +483,19 @@ const AiTutor: FC<AiTutorProps> = ({ onMenuClick, onNewChat }) => {
             <button
               type="submit"
               disabled={busy || !hasContent}
-              className="mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white transition hover:bg-slate-700 disabled:bg-slate-200 disabled:text-slate-400"
+              className="mb-0.5 flex h-9 w-24 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white transition hover:bg-slate-700 disabled:bg-slate-200 disabled:text-slate-400"
               aria-label="Send"
             >
               {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="truncate text-xs">Sikshya AI is calculating...</span>
+                </>
               ) : (
-                <ArrowUp className="h-5 w-5" />
+                <>
+                  <ArrowUp className="h-5 w-5" />
+                  <span className="ml-2 text-xs font-medium">Submit</span>
+                </>
               )}
             </button>
           </form>
